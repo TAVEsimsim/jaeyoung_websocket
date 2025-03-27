@@ -3,7 +3,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/chatdb?useSSL=false
     username: root
-    password: jybtob0321^^
+    password: "jybtob0321^^"
   jpa:
     database: mysql
     #InnoDB
