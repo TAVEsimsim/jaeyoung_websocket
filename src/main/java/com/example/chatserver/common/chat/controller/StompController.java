@@ -1,21 +1,26 @@
 package com.example.chatserver.common.chat.controller;
 
-import com.example.chatserver.common.chat.dto.ChatMessageReqDto;
+import com.example.chatserver.common.chat.dto.ChatMessageDto;
+import com.example.chatserver.common.chat.service.ChatService;
+import com.example.chatserver.common.chat.service.RedisPubSubService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.stereotype.Controller;
 
 @Controller
 public class StompController {
 
     private  final SimpMessageSendingOperations messageTemplate;
+    private final ChatService chatService;
+    private final RedisPubSubService pubSubService;
 
-    public StompController(SimpMessageSendingOperations messageTemplate) {
+    public StompController(SimpMessageSendingOperations messageTemplate, ChatService chatService, RedisPubSubService pubSubService) {
         this.messageTemplate = messageTemplate;
+        this.chatService = chatService;
+        this.pubSubService = pubSubService;
     }
 
     //    // 방법1.MessageMapping(수신)과 SendTo(topic에 메시지전달) 한꺼번에 처리
@@ -28,11 +33,15 @@ public class StompController {
 //        return message;
 //    }
     @MessageMapping("/{roomId}")
-    public void sendMessage(@DestinationVariable Long roomId, String message, ChatMessageReqDto chatMessageReqDto) {
+    public void sendMessage(@DestinationVariable Long roomId,ChatMessageDto chatMessageDto) throws JsonProcessingException {
 
-        System.out.println(message);
-        messageTemplate.convertAndSend("/topic/"+roomId, chatMessageReqDto);
-
+        System.out.println(chatMessageDto.getMessage());
+        chatService.saveMessage(roomId, chatMessageDto);
+        chatMessageDto.setRoomId(roomId);
+       // messageTemplate.convertAndSend("/topic/"+roomId, chatMessageDto);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String message = objectMapper.writeValueAsString(chatMessageDto);
+        pubSubService.publish("chat",message );
     }
 
 }
